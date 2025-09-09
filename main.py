@@ -4,7 +4,6 @@ from datetime import datetime
 
 from aiogram import Bot, Dispatcher, types
 import handlers
-from menu import MENU_STRUCTURE
 import menu_builder as mb
 
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +14,32 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
 mb._handlers_module = handlers
-mb._menu_structure = MENU_STRUCTURE
+mb._menu_structure = {
+    "main": {
+        "text": "@welcome",
+        "buttons": [
+            {"text": "Пункт 1", "action": "goto", "data": "m1"},
+            {"text": "Пункт 2", "action": "goto", "data": "m2"},
+            {"text": "Пустой пункт", "action": "nothing"},
+            {"text": "Показать статистику", "action": "func", "data": "show_stats"},
+        ]
+    },
+    "m1": {
+        "text": "Меню 1",
+        "buttons": [
+            {"text": "Достать из БД", "action": "func", "data": "get_from_db"},
+            {"action": "gen", "data": "get_vars", "pattern": {"text": "$text", "action":"func", "data":"$funname"}},
+            {"text": "Назад", "action": "goto", "data": "main"}
+        ]
+    },
+    "m2": {
+        "text": "Меню 2",
+        "buttons": [
+            {"action": "gen_manual", "data": "get_my_items"},
+            {"text": "Назад", "action": "goto", "data": "main"}
+        ]
+    }
+}
 mb._text_translations = {
     "welcome": "Добро пожаловать, $USER_NAME! Это бот-конструктор"
 }
