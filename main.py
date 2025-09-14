@@ -5,12 +5,13 @@ from datetime import datetime
 from aiogram import Bot, Dispatcher, types
 import handlers
 import menu_builder as mb
+from config import Config
 
 logging.basicConfig(level=logging.INFO)
 
-TOKEN = ""
+config = Config()
 
-bot = Bot(token=TOKEN)
+bot = Bot(token=config.BOT_TOKEN)
 dp = Dispatcher(bot)
 
 mb._handlers_module = handlers
