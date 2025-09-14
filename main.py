@@ -2,7 +2,8 @@ import asyncio
 import logging
 from datetime import datetime
 
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, F, Router
+from aiogram.filters import Command
 import handlers
 import menu_builder as mb
 from config import Config
@@ -12,7 +13,8 @@ logging.basicConfig(level=logging.INFO)
 config = Config()
 
 bot = Bot(token=config.BOT_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher()
+router = Router()
 
 mb._handlers_module = handlers
 mb._menu_structure = {
@@ -55,21 +57,22 @@ mb._reserved_vars = {
 }
 
 # ===== Стартовое меню =====
-@dp.message_handler(commands=["start"])
+@router.message(Command("start"))
 async def cmd_start(message: types.Message):
     msg_text, keyboard = mb.build_message(message, "main")
     await message.answer(msg_text, reply_markup=keyboard)
 
-@dp.message_handler(commands=["test"])
-async def cmd_start(message: types.Message):
+@router.message(Command("test"))
+async def cmd_test(message: types.Message):
     await message.answer('test!')
 
-@dp.callback_query_handler()
+@router.callback_query()
 async def handle_callback(callback: types.CallbackQuery):
     await mb.handle_callback(callback)
 
 # ===== Запуск бота =====
 async def main():
+    dp.include_router(router)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
