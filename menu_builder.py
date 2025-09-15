@@ -29,28 +29,38 @@ class Scope:
 
 # ===== Генерация клавиатуры =====
 def build_keyboard(message: Message, menu_key: str, scope) -> InlineKeyboardMarkup:
-    buttons_list = []
-    for item in _menu_structure[menu_key]["buttons"]:
-        buttons_list.append(add_item_to_keyboard(item, message, scope))
+    buttons_list = process_source(_menu_structure[menu_key]["buttons"], message, scope)
+    buttons_list = [x if isinstance(x, list) else [x] for x in buttons_list]
     return InlineKeyboardMarkup(inline_keyboard=buttons_list)
 
-def add_item_to_keyboard(item, message: Message, parent_scope) -> list[InlineKeyboardButton]:
+def process_source(source, message: Message, scope):
+    buttons_list = []
+    for item in source:
+        if isinstance(item, list):
+            buttons_list.append(process_source(item, message, scope))
+        else:
+            processed = process_item(item, message, scope)
+            if isinstance(processed, list):
+                buttons_list.extend(processed)
+            else:
+                buttons_list.append(processed)
+    return buttons_list
+
+def process_item(item, message: Message, parent_scope):
     scope = load_scope(item, parent_scope)
 
     match item["action"]:
         case "goto":
-            return [InlineKeyboardButton(
+            return InlineKeyboardButton(
                 text=process_text(item, scope),
                 callback_data=f"{substitute_vars(item['action'], scope)}{_split_symbol}{substitute_vars(item['data'], scope)}"
-            )]
-
+            )
         case "func":
             # todo args
-            return [InlineKeyboardButton(
+            return InlineKeyboardButton(
                 text=process_text(item, scope),
                 callback_data=f"{substitute_vars(item['action'], scope)}{_split_symbol}{substitute_vars(item['data'], scope)}"
-            )]
-
+            )
         case "gen":
             func = getattr(_handlers_module, substitute_vars(item["data"], scope), None)
             var_dicts = func()
@@ -58,25 +68,20 @@ def add_item_to_keyboard(item, message: Message, parent_scope) -> list[InlineKey
 
             buttons = []
             for var_dict in var_dicts:
-                # Recursively call and extend the list
-                buttons.extend(add_item_to_keyboard(pattern_item, message, Scope(var_dict, scope)))
+                buttons.extend(process_source([pattern_item], message, Scope(var_dict, scope)))
             return buttons
 
         case "gen_manual":
             func = getattr(_handlers_module, substitute_vars(item["data"], scope), None)
             items = func(message)
 
-            buttons = []
-            for new_item in items:
-                # Recursively call and extend the list
-                buttons.extend(add_item_to_keyboard(new_item, message, scope))
-            return buttons
+            return process_source(items, message, scope)
 
         case "nothing":
-            return [InlineKeyboardButton(text=process_text(item, scope), callback_data='nothing')]
-
+            return InlineKeyboardButton(text=process_text(item, scope), callback_data='nothing')
         case _:
             raise Exception(f"Нет такого действия: {item['action']}")
+
 def substitute_vars(text: str, scope) -> str:
     return Template(text).safe_substitute(scope)
 
