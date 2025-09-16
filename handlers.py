@@ -1,14 +1,14 @@
 from aiogram import types
 
-async def get_from_db(callback: types.CallbackQuery):
+async def get_from_db(message: types.Message):
     # Здесь можно подключаться к БД
-    await callback.message.answer("📦 Данные из базы: ...")
+    await message.answer("📦 Данные из базы: ...")
 
-async def show_stats(callback: types.CallbackQuery):
-    await callback.message.answer("📊 Какая-то статистика")
+async def show_stats(message: types.Message):
+    await message.answer("📊 Какая-то статистика")
 
-async def send_message(callback: types.CallbackQuery, text):
-    await callback.message.answer(text)
+async def send_message(message: types.Message, text):
+    await message.answer(text)
 
 
 def get_my_items(message):
@@ -27,8 +27,14 @@ def get_vars():
     ]
 
 
-async def hello1(callback: types.CallbackQuery):
-    await callback.message.answer("hi1")
+async def hello1(message: types.Message):
+    await message.answer("hi1")
 
-async def hello2(callback: types.CallbackQuery):
-    await callback.message.answer("hi2")
+async def hello2(message: types.Message):
+    await message.answer("hi2")
+
+async def input_pressed(message: types.Message):
+    await message.answer(f"Введите сообщение:")
+
+async def handle_input(message: types.Message):
+    await message.answer(f"Ты ввёл сообщение \"{message.text}\"")

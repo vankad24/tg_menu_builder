@@ -1,4 +1,5 @@
-
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from aiogram import types
 from string import Template
@@ -26,6 +27,13 @@ class Scope:
         if key in _reserved_vars and self.message is not None:
             return _reserved_vars[key](self.message)
         return None
+
+class UserStates(StatesGroup):
+    """
+    Класс для определения состояний Finite State Machine (FSM).
+    """
+    waitInput = State()
+    State2 = State()
 
 # ===== Генерация клавиатуры =====
 def build_keyboard(message: Message, menu_key: str, scope) -> InlineKeyboardMarkup:
@@ -76,7 +84,11 @@ def process_item(item, message: Message, parent_scope):
             items = func(message)
 
             return process_source(items, message, scope)
-
+        case "input":
+            return InlineKeyboardButton(
+                text=process_text(item, scope),
+                callback_data=f"{substitute_vars(item['action'], scope)}{_split_symbol}{substitute_vars(item['data'], scope)}{_split_symbol}{substitute_vars(item['callback'], scope)}"
+            )
         case "nothing":
             return InlineKeyboardButton(text=process_text(item, scope), callback_data='nothing')
         case _:
@@ -109,8 +121,12 @@ def build_message(msg: types.Message, menu_key: str):
     return process_text(_menu_structure[menu_key],stage_scope), build_keyboard(msg, menu_key, stage_scope)
 
 # ===== Переходы по меню =====
+async def handle_func_call(message: Message, fun_name):
+    func = getattr(_handlers_module, fun_name, None)
+    if func and callable(func):
+        await func(message)
 
-async def handle_callback(callback: types.CallbackQuery):
+async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
     arr = callback.data.split(_split_symbol, 1)
     if len(arr)==2:
         action = arr[0]
@@ -124,12 +140,28 @@ async def handle_callback(callback: types.CallbackQuery):
             msg_text, keyboard = build_message(callback.message, data)
             await callback.message.edit_text(msg_text, reply_markup=keyboard)
         case "func":
-            func = getattr(_handlers_module, data, None)
-            if func and callable(func):
-                await func(callback)
+            await handle_func_call(callback.message, data)
+        case "input":
+            fun_name, callback_name = data.split(_split_symbol, 1)
+            await handle_func_call(callback.message, fun_name)
+            await state.set_state(UserStates.waitInput)
+            await state.update_data({"action": action, "data": callback_name})
         case "nothing":
             ...
         case _:
             await callback.message.answer(f"⚠ Нет такого действия: {action} {data}")
     await callback.answer()
+
+async def handle_state(message: Message, state: FSMContext):
+    if not state:
+        await message.answer(f"Пустое состояние")
+
+    d = await state.get_data()
+    action = d["action"]
+    data = d["data"]
+
+    match await state.get_state():
+        case UserStates.waitInput:
+            if action == "input":
+                await handle_func_call(message, data)
 
