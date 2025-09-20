@@ -1,16 +1,16 @@
+import json
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 from aiogram import types
 from string import Template
-
+from callback_models import MenuCbData
 
 _handlers_module = {}
 _menu_structure = {}
 _text_translations = {}
 _reserved_vars = {}
 _split_symbol = ":"
-_args_separator = ";"
 _translation_symbol_prefix = '@'
 
 class Scope:
@@ -54,6 +54,12 @@ def process_source(source, message: Message, scope):
                 buttons_list.append(processed)
     return buttons_list
 
+def pack_callback_data(item, scope: Scope, keys:list):
+    result = []
+    for key in keys:
+        result.append(substitute_vars(item[key], scope))
+    return _split_symbol.join(result)
+
 def process_item(item, message: Message, parent_scope):
     scope = load_scope(item, parent_scope)
 
@@ -61,13 +67,23 @@ def process_item(item, message: Message, parent_scope):
         case "goto":
             return InlineKeyboardButton(
                 text=process_text(item, scope),
-                callback_data=f"{substitute_vars(item['action'], scope)}{_split_symbol}{substitute_vars(item['data'], scope)}"
+                callback_data=MenuCbData(action="goto", data=substitute_vars(item["data"], scope)).pack()
             )
         case "func":
-            # todo args
+            args = None
+            if "args" in item:
+                arr = [
+                    substitute_vars(x, scope) if isinstance(x, str) else x
+                    for x in item["args"]
+                ]
+                args = json.dumps(arr)
             return InlineKeyboardButton(
                 text=process_text(item, scope),
-                callback_data=f"{substitute_vars(item['action'], scope)}{_split_symbol}{substitute_vars(item['data'], scope)}"
+                callback_data=MenuCbData(
+                    action="func",
+                    data=substitute_vars(item["data"], scope),
+                    args=args
+                ).pack()
             )
         case "gen":
             func = getattr(_handlers_module, substitute_vars(item["data"], scope), None)
@@ -82,15 +98,19 @@ def process_item(item, message: Message, parent_scope):
         case "gen_manual":
             func = getattr(_handlers_module, substitute_vars(item["data"], scope), None)
             items = func(message)
-
             return process_source(items, message, scope)
         case "input":
             return InlineKeyboardButton(
                 text=process_text(item, scope),
-                callback_data=f"{substitute_vars(item['action'], scope)}{_split_symbol}{substitute_vars(item['data'], scope)}{_split_symbol}{substitute_vars(item['callback'], scope)}"
+                callback_data=MenuCbData(
+                    action="input",
+                    data=substitute_vars(item["data"], scope),
+                    callback=substitute_vars(item["callback"], scope)
+                ).pack()
             )
         case "nothing":
-            return InlineKeyboardButton(text=process_text(item, scope), callback_data='nothing')
+            return InlineKeyboardButton(text=process_text(item, scope), callback_data=MenuCbData(action="nothing").pack())
+
         case _:
             raise Exception(f"Нет такого действия: {item['action']}")
 
@@ -117,33 +137,47 @@ def process_text(item, scope):
 
 def build_message(msg: types.Message, menu_key: str):
     stage_scope = load_scope(_menu_structure[menu_key], message=msg)
-    # stage_scope.parent_scope = None
     return process_text(_menu_structure[menu_key],stage_scope), build_keyboard(msg, menu_key, stage_scope)
 
-# ===== Переходы по меню =====
-async def handle_func_call(message: Message, fun_name):
+async def handle_func_call(message: Message, fun_name: str, args: str | None = None):
     func = getattr(_handlers_module, fun_name, None)
     if func and callable(func):
-        await func(message)
+        if args:
+            try:
+                parsed_args = json.loads(args)
+            except Exception:
+                parsed_args = args  # если не JSON — передаём как есть
+            if isinstance(parsed_args, dict):
+                await func(message, **parsed_args)
+            elif isinstance(parsed_args, list):
+                await func(message, *parsed_args)
+            else:
+                await func(message, parsed_args)
+        else:
+            await func(message)
 
 async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
-    arr = callback.data.split(_split_symbol, 1)
-    if len(arr)==2:
-        action = arr[0]
-        data = arr[1]
-    else:
-        action = arr[0]
-        data = None
+    raw_data = callback.data
+
+    try:
+        callback_data = MenuCbData.unpack(raw_data)
+    except Exception:
+        await callback.answer("Некорректный callback_data")
+        return
+
+    action = callback_data.action
+    data = callback_data.data
+    args = callback_data.args
+    callback_name = callback_data.callback
 
     match action:
         case "goto":
             msg_text, keyboard = build_message(callback.message, data)
             await callback.message.edit_text(msg_text, reply_markup=keyboard)
         case "func":
-            await handle_func_call(callback.message, data)
+            await handle_func_call(callback.message, data, args)
         case "input":
-            fun_name, callback_name = data.split(_split_symbol, 1)
-            await handle_func_call(callback.message, fun_name)
+            await handle_func_call(callback.message, data, args)
             await state.set_state(UserStates.waitInput)
             await state.update_data({"action": action, "data": callback_name})
         case "nothing":

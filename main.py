@@ -29,6 +29,7 @@ mb._menu_structure = {
             ],
             {"text": "Пустой пункт", "action": "nothing"},
             {"text": "Показать статистику", "action": "func", "data": "show_stats"},
+            {"text": "Функция с аргементами", "action": "func", "data": "func_with_args", "args": [1, "$USER_ID", "hi", 3]},
         ]
     },
     "m1": {

@@ -38,3 +38,6 @@ async def input_pressed(message: types.Message):
 
 async def handle_input(message: types.Message):
     await message.answer(f"Ты ввёл сообщение \"{message.text}\"")
+
+async def func_with_args(message: types.Message, *args):
+    await message.answer(f"Переданные аргументы: {args}")
