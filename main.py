@@ -4,9 +4,8 @@ from example_data_source import *
 
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.filters import Command
-
 import menu_builder as mb
-from data.Config import Config
+from bot_init import config
 
 logging.basicConfig(level=logging.INFO)
 

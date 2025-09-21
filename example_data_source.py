@@ -1,10 +1,9 @@
 from datetime import datetime
 
-from data.Config import Config
+from bot_init import config
 from datasource.AbstractDataSource import AbstractDataSource as ADS
 
 import handlers
-config = Config()
 
 _access_levels = {
     "admin": {
