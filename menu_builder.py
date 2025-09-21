@@ -69,7 +69,8 @@ def process_item(item, message: Message, parent_scope):
         if not has_access(access_level, message):
             return None
 
-    match item["action"]:
+    action = substitute_vars(item["action"], scope)
+    match action:
         case "goto":
             return InlineKeyboardButton(
                 text=process_text(item, scope),
@@ -123,12 +124,12 @@ def process_item(item, message: Message, parent_scope):
 def substitute_vars(text: str, scope) -> str:
     return Template(text).safe_substitute(scope)
 
-def load_scope(item, scope=None, message=None):
+def load_scope(item, parent_scope):
     if 'getter' in item:
         func = getattr(_handlers_module, item["getter"], None)
         vars_dict = func()
-        return Scope(vars_dict, scope, message)
-    return Scope({}, scope, message)
+        return Scope(vars_dict, parent_scope)
+    return parent_scope
 
 def get_translation(key: str):
     return _text_translations.get(key[1:], key)
@@ -149,7 +150,7 @@ def has_access(access_level, msg: types.Message):
     return msg.chat.id in _access_levels[access_level]['ids']
 
 def build_message(message: types.Message, menu_item):
-    stage_scope = load_scope(menu_item, message=message)
+    stage_scope = load_scope(menu_item, Scope({}, message=message))
     return process_text(menu_item, stage_scope), build_keyboard(message, menu_item, stage_scope)
 
 async def handle_send_menu(message: types.Message, menu_key: str, edit_message=False):
