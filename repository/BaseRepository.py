@@ -5,4 +5,4 @@ class BaseRepository:
         if not isinstance(data_source, ADS):
             raise TypeError(f"data_source должен быть экземпляром {ADS}")
 
-        self.__data_source = data_source
+        self._data_source = data_source
