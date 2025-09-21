@@ -41,3 +41,6 @@ async def handle_input(message: types.Message):
 
 async def func_with_args(message: types.Message, *args):
     await message.answer(f"Переданные аргументы: {args}")
+
+async def func_with_args2(message: types.Message, id, text, num):
+    await message.answer(f"Переданные аргументы: {id=} {text=} {num=}")

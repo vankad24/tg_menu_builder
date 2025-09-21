@@ -18,6 +18,12 @@ bot = Bot(token=config.BOT_TOKEN)
 dp = Dispatcher()
 router = Router()
 
+mb._access_levels = {
+    "admin": {
+        "ids": config.ADMINS,
+        "fail_message": "Вы не админ"
+    }
+}
 mb._handlers_module = handlers
 mb._menu_structure = {
     "main": {
@@ -30,6 +36,7 @@ mb._menu_structure = {
             {"text": "Пустой пункт", "action": "nothing"},
             {"text": "Показать статистику", "action": "func", "data": "show_stats"},
             {"text": "Функция с аргементами", "action": "func", "data": "func_with_args", "args": [1, "$USER_ID", "hi", 3]},
+            {"text": "Админская кнопка", "action": "goto", "data": "admins_menu", "access": "admin"},
         ]
     },
     "m1": {
@@ -47,6 +54,14 @@ mb._menu_structure = {
         "text": "Меню 2",
         "buttons": [
             {"action": "gen_manual", "data": "get_my_items"},
+            {"text": "Назад", "action": "goto", "data": "main"}
+        ]
+    },
+    "admins_menu": {
+        "access": "admin",
+        "text": "Добро пожаловать в админку. Твой id: $USER_ID",
+        "buttons": [
+            {"text": "Функция с аргементами", "action": "func", "data": "func_with_args2", "args": ["$USER_ID", "hello, there!", 24]},
             {"text": "Назад", "action": "goto", "data": "main"}
         ]
     }
@@ -67,8 +82,7 @@ mb._reserved_vars = {
 # ===== Стартовое меню =====
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
-    msg_text, keyboard = mb.build_message(message, "main")
-    await message.answer(msg_text, reply_markup=keyboard)
+    await mb.handle_send_menu(message, "main")
 
 @router.message(Command("test"))
 async def cmd_test(message: types.Message):

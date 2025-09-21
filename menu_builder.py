@@ -12,6 +12,7 @@ _text_translations = {}
 _reserved_vars = {}
 _split_symbol = ":"
 _translation_symbol_prefix = '@'
+_access_levels = {}
 
 class Scope:
     def __init__(self, vars_dict, parent_scope=None, message=None):
@@ -36,8 +37,8 @@ class UserStates(StatesGroup):
     State2 = State()
 
 # ===== Генерация клавиатуры =====
-def build_keyboard(message: Message, menu_key: str, scope) -> InlineKeyboardMarkup:
-    buttons_list = process_source(_menu_structure[menu_key]["buttons"], message, scope)
+def build_keyboard(message: Message, menu_item, scope) -> InlineKeyboardMarkup:
+    buttons_list = process_source(menu_item["buttons"], message, scope)
     buttons_list = [x if isinstance(x, list) else [x] for x in buttons_list]
     return InlineKeyboardMarkup(inline_keyboard=buttons_list)
 
@@ -48,10 +49,11 @@ def process_source(source, message: Message, scope):
             buttons_list.append(process_source(item, message, scope))
         else:
             processed = process_item(item, message, scope)
-            if isinstance(processed, list):
-                buttons_list.extend(processed)
-            else:
-                buttons_list.append(processed)
+            if processed is not None:
+                if isinstance(processed, list):
+                    buttons_list.extend(processed)
+                else:
+                    buttons_list.append(processed)
     return buttons_list
 
 def pack_callback_data(item, scope: Scope, keys:list):
@@ -62,6 +64,10 @@ def pack_callback_data(item, scope: Scope, keys:list):
 
 def process_item(item, message: Message, parent_scope):
     scope = load_scope(item, parent_scope)
+    if "access" in item:
+        access_level = item["access"]
+        if not has_access(access_level, message):
+            return None
 
     match item["action"]:
         case "goto":
@@ -135,9 +141,35 @@ def process_text(item, scope):
         text = get_translation(text)
     return substitute_vars(text, scope)
 
-def build_message(msg: types.Message, menu_key: str):
-    stage_scope = load_scope(_menu_structure[menu_key], message=msg)
-    return process_text(_menu_structure[menu_key],stage_scope), build_keyboard(msg, menu_key, stage_scope)
+
+
+def has_access(access_level, msg: types.Message):
+    if access_level not in _access_levels:
+        return False
+    return msg.chat.id in _access_levels[access_level]['ids']
+
+def build_message(message: types.Message, menu_item):
+    stage_scope = load_scope(menu_item, message=message)
+    return process_text(menu_item, stage_scope), build_keyboard(message, menu_item, stage_scope)
+
+async def handle_send_menu(message: types.Message, menu_key: str, edit_message=False):
+    menu_item = _menu_structure[menu_key]
+
+    #check access level
+    if "access" in menu_item:
+        access_level = menu_item["access"]
+        if not has_access(access_level, message):
+            fail_message = _access_levels[access_level].get('fail_message', '')
+            if fail_message:
+                await message.answer(fail_message)
+            return
+
+    msg_text, keyboard = build_message(message, menu_item)
+    if msg_text:
+        if edit_message:
+            await message.edit_text(msg_text, reply_markup=keyboard)
+        else:
+            await message.answer(msg_text, reply_markup=keyboard)
 
 async def handle_func_call(message: Message, fun_name: str, args: str | None = None):
     func = getattr(_handlers_module, fun_name, None)
@@ -172,8 +204,7 @@ async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
 
     match action:
         case "goto":
-            msg_text, keyboard = build_message(callback.message, data)
-            await callback.message.edit_text(msg_text, reply_markup=keyboard)
+            await handle_send_menu(callback.message, data, True)
         case "func":
             await handle_func_call(callback.message, data, args)
         case "input":
