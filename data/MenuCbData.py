@@ -1,4 +1,5 @@
-from aiogram.filters.callback_data import CallbackData  # aiogram v3
+from aiogram.filters.callback_data import CallbackData
+
 
 class MenuCbData(CallbackData, prefix="menu"):
     action: str

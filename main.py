@@ -7,7 +7,7 @@ from aiogram.filters import Command
 
 import handlers
 import menu_builder as mb
-from config import Config
+from data.Config import Config
 
 logging.basicConfig(level=logging.INFO)
 
@@ -88,7 +88,30 @@ async def cmd_test(message: types.Message):
     await message.answer('test!')
 
 # ===== Запуск бота =====
+
+def init_menu_builder():
+    callback_handler_source = CallbackHandlerSource()
+    getter_source = GetterSource()
+    gen_items_source = GenItemsSource()
+    translation_source = TranslationSource()
+    reserved_vars_source = ReservedVarsSource()
+    access_levels_source = AccessLevelsSource()
+    menu_structure_source = MenuStructureSource()
+
+
+    mb.initRepositoryStorage(
+        callback_handler_src=callback_handler_source,
+        getter_src=getter_source,
+        gen_items_src=gen_items_source,
+        translation_src=translation_source,
+        reserved_vars_src=reserved_vars_source,
+        access_levels_src=access_levels_source,
+        menu_structure_src=menu_structure_source
+    )
+
+
 async def main():
+    init_menu_builder()
     mb.register_handlers(router)
     dp.include_router(router)
     await dp.start_polling(bot)

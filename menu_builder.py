@@ -1,10 +1,16 @@
 import json
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
-from aiogram import types, Router
 from string import Template
-from callback_models import MenuCbData
+
+from aiogram import types, Router
+from aiogram.fsm.context import FSMContext
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
+
+from data.RepositoryStorage import RepositoryStorage
+from repository.AccessRepository import AccessRepository
+from repository.FunctionRepository import FunctionRepository
+from repository.MenuRepository import MenuRepository
+from repository.ScopeRepository import ScopeRepository
+from repository.TranslationRepository import TranslationRepository
 
 _handlers_module = {}
 _menu_structure = {}
@@ -13,6 +19,20 @@ _reserved_vars = {}
 _split_symbol = ":"
 _translation_symbol_prefix = '@'
 _access_levels = {}
+
+rs: RepositoryStorage = None
+
+def initRepositoryStorage(callback_handler_src, getter_src, gen_items_src, translation_src, reserved_vars_src, access_levels_src, menu_structure_src):
+    global rs
+    rs = RepositoryStorage(
+        funRep=FunctionRepository(callback_handler_src, getter_src, gen_items_src),
+        transRep=TranslationRepository(translation_src),
+        scopeRep=ScopeRepository(reserved_vars_src),
+        accessRep=AccessRepository(access_levels_src),
+        menuRep=MenuRepository(menu_structure_src)
+    )
+
+
 
 class Scope:
     def __init__(self, vars_dict, parent_scope=None, message=None):
@@ -29,12 +49,6 @@ class Scope:
             return _reserved_vars[key](self.message)
         return None
 
-class UserStates(StatesGroup):
-    """
-    Класс для определения состояний Finite State Machine (FSM).
-    """
-    waitInput = State()
-    State2 = State()
 
 # ===== Генерация клавиатуры =====
 def build_keyboard(message: Message, menu_item, scope) -> InlineKeyboardMarkup:
