@@ -2,9 +2,8 @@ import asyncio
 import logging
 from datetime import datetime
 
-from aiogram import Bot, Dispatcher, types, F, Router
+from aiogram import Bot, Dispatcher, types, Router
 from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
 
 import handlers
 import menu_builder as mb
@@ -88,16 +87,9 @@ async def cmd_start(message: types.Message):
 async def cmd_test(message: types.Message):
     await message.answer('test!')
 
-@router.callback_query()
-async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
-    await mb.handle_callback(callback, state)
-
-@router.message()
-async def handle_message(message: types.Message, state: FSMContext):
-    await mb.handle_state(message, state)
-
 # ===== Запуск бота =====
 async def main():
+    mb.register_handlers(router)
     dp.include_router(router)
     await dp.start_polling(bot)
 

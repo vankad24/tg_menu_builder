@@ -2,7 +2,7 @@ import json
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
-from aiogram import types
+from aiogram import types, Router
 from string import Template
 from callback_models import MenuCbData
 
@@ -231,3 +231,13 @@ async def handle_state(message: Message, state: FSMContext):
             if action == "input":
                 await handle_func_call(message, data)
 
+
+
+def register_handlers(router: Router):
+    @router.callback_query()
+    async def router_handle_callback(callback: types.CallbackQuery, state: FSMContext):
+        await handle_callback(callback, state)
+
+    @router.message()
+    async def router_handle_message(message: types.Message, state: FSMContext):
+        await handle_state(message, state)
