@@ -6,27 +6,8 @@ from src.menu_builder.datasource.AbstractDataSource import AbstractDataSource as
 from src.menu_builder.repository.BaseRepository import BaseRepository
 
 class FunctionRepository(BaseRepository):
-    def __init__(self, callback_handler_src: ADS, getter_src: ADS, gen_items_src: ADS):
-        super().__init__(callback_handler_src)
-        if not isinstance(callback_handler_src, ADS):
-            raise TypeError(f"callback_handler_src должен быть экземпляром {ADS}")
-        if not isinstance(getter_src, ADS):
-            raise TypeError(f"getter_src должен быть экземпляром {ADS}")
-        if not isinstance(gen_items_src, ADS):
-            raise TypeError(f"gen_items_src должен быть экземпляром {ADS}")
-
-        self._callback_handler_src = callback_handler_src
-        self._getter_src = getter_src
-        self._gen_items_src = gen_items_src
-
-    def get_callback_handler(self, key: str):
-        return self._callback_handler_src.get(key)
-
-    def get_getter(self, key: str):
-        return self._getter_src.get(key)
-
-    def get_gen_items_func(self, key: str):
-        return self._gen_items_src.get(key)
+    def get_functon(self, key: str):
+        return self._data_source.get(key)
 
 def get_func_args(message: types.Message, func, args: str | None = None):
 

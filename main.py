@@ -34,9 +34,7 @@ def init_menu_builder():
 
 
     mb.createRepositoryStorage(
-        callback_handler_src=func_source,
-        getter_src=func_source,
-        gen_items_src=func_source,
+        function_src=func_source,
         translation_src=translation_source,
         reserved_vars_src=reserved_vars_source,
         access_levels_src=access_levels_source,

@@ -18,9 +18,7 @@ from .repository.TranslationRepository import TranslationRepository
 rs: RepositoryStorage = None
 
 def createRepositoryStorage(
-        callback_handler_src,
-        getter_src,
-        gen_items_src,
+        function_src,
         translation_src,
         reserved_vars_src,
         access_levels_src,
@@ -28,7 +26,7 @@ def createRepositoryStorage(
 ):
     global rs
     rs = RepositoryStorage(
-        funRep=FunctionRepository(callback_handler_src, getter_src, gen_items_src),
+        funRep=FunctionRepository(function_src),
         transRep=TranslationRepository(translation_src),
         scopeRep=ScopeRepository(reserved_vars_src),
         accessRep=AccessRepository(access_levels_src),
@@ -87,7 +85,7 @@ def process_item(item, message: Message, parent_scope):
                 ).pack()
             )
         case "gen":
-            func = rs.funRep.get_gen_items_func(substitute_vars(item["data"], scope))
+            func = rs.funRep.get_functon(substitute_vars(item["data"], scope))
             var_dicts = handle_func_call(message, func)
             pattern_item = item["pattern"]
 
@@ -97,7 +95,7 @@ def process_item(item, message: Message, parent_scope):
             return buttons
 
         case "gen_manual":
-            func = rs.funRep.get_gen_items_func(substitute_vars(item["data"], scope))
+            func = rs.funRep.get_functon(substitute_vars(item["data"], scope))
             items = handle_func_call(message, func)
             return process_source(items, message, scope)
         case "input":
@@ -118,7 +116,7 @@ def process_item(item, message: Message, parent_scope):
 
 def load_scope(item, parent_scope, message):
     if 'getter' in item:
-        func = rs.funRep.get_getter(substitute_vars(item["getter"], parent_scope))
+        func = rs.funRep.get_functon(substitute_vars(item["getter"], parent_scope))
         vars_dict = handle_func_call(message, func)
         return Scope(vars_dict, parent_scope)
     return parent_scope
@@ -166,10 +164,10 @@ async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
         case "goto":
             await handle_send_menu(callback.message, data, True)
         case "func":
-            func = rs.funRep.get_callback_handler(data)
+            func = rs.funRep.get_functon(data)
             await async_handle_func_call(callback.message, func, args)
         case "input":
-            func = rs.funRep.get_callback_handler(data)
+            func = rs.funRep.get_functon(data)
             await async_handle_func_call(callback.message, func, args)
             await state.set_state(UserStates.waitInput)
             await state.update_data({"action": action, "data": callback_name})
@@ -190,7 +188,7 @@ async def handle_state(message: Message, state: FSMContext):
     match await state.get_state():
         case UserStates.waitInput:
             if action == "input":
-                func = rs.funRep.get_callback_handler(data)
+                func = rs.funRep.get_functon(data)
                 await async_handle_func_call(message, func)
 
 
