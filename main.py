@@ -4,7 +4,7 @@ from example_data_source import *
 
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.filters import Command
-import menu_builder as mb
+from src.menu_builder import menu_builder as mb
 from bot_init import config
 
 logging.basicConfig(level=logging.INFO)

@@ -1,4 +1,4 @@
-from datasource.AbstractDataSource import AbstractDataSource as ADS
+from src.menu_builder.datasource.AbstractDataSource import AbstractDataSource as ADS
 
 class BaseRepository:
     def __init__(self, data_source: ADS):

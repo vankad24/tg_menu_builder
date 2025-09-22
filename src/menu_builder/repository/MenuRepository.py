@@ -1,4 +1,4 @@
-from repository.BaseRepository import BaseRepository
+from src.menu_builder.repository.BaseRepository import BaseRepository
 
 
 class MenuRepository(BaseRepository):

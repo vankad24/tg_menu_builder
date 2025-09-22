@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from bot_init import config
-from datasource.AbstractDataSource import AbstractDataSource as ADS
+from src.menu_builder.datasource.AbstractDataSource import AbstractDataSource as ADS
 
 import handlers
 
@@ -22,7 +22,7 @@ _menu_structure = {
             ],
             {"text": "Пустой пункт", "action": "nothing"},
             {"text": "Показать статистику", "action": "func", "data": "show_stats"},
-            {"text": "Функция с аргементами", "action": "func", "data": "func_with_args", "args": [1, "$USER_ID", "hi", 3]},
+            {"text": "Функция с аргументами", "action": "func", "data": "func_with_args", "args": [1, "$USER_ID", "hi", 3]},
             {"text": "Админская кнопка", "action": "goto", "data": "admins_menu", "access": "admin"},
         ]
     },
@@ -48,7 +48,7 @@ _menu_structure = {
         "access": "admin",
         "text": "Добро пожаловать в админку. Твой id: $USER_ID",
         "buttons": [
-            {"text": "Функция с аргементами", "action": "func", "data": "func_with_args2", "args": ["$USER_ID", "hello, there!", 24]},
+            {"text": "Функция с аргументами", "action": "func", "data": "func_with_args2", "args": ["$USER_ID", "hello, there!", 24]},
             {"text": "Назад", "action": "goto", "data": "main"}
         ]
     }

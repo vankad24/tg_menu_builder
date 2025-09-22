@@ -1,9 +1,9 @@
 import inspect
 import json
 
-from repository.BaseRepository import BaseRepository
-from datasource.AbstractDataSource import AbstractDataSource as ADS
 from aiogram import types
+from src.menu_builder.datasource.AbstractDataSource import AbstractDataSource as ADS
+from src.menu_builder.repository.BaseRepository import BaseRepository
 
 class FunctionRepository(BaseRepository):
     def __init__(self, callback_handler_src: ADS, getter_src: ADS, gen_items_src: ADS):

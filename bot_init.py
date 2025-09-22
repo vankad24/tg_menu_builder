@@ -1,3 +1,3 @@
-from data.Config import Config
+from Config import Config
 
 config = Config()

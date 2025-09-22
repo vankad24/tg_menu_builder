@@ -1,5 +1,5 @@
-from repository.BaseRepository import BaseRepository
-from repository.ScopeRepository import substitute_vars
+from src.menu_builder.repository.BaseRepository import BaseRepository
+from src.menu_builder.repository.ScopeRepository import substitute_vars
 
 
 class TranslationRepository(BaseRepository):

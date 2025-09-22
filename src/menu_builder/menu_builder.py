@@ -4,15 +4,15 @@ from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 
-from data.MenuCbData import MenuCbData
-from data.RepositoryStorage import RepositoryStorage
-from data.Scope import Scope
-from data.UserStates import UserStates
-from repository.AccessRepository import AccessRepository
-from repository.FunctionRepository import FunctionRepository, handle_func_call, async_handle_func_call
-from repository.MenuRepository import MenuRepository
-from repository.ScopeRepository import ScopeRepository, substitute_vars
-from repository.TranslationRepository import TranslationRepository
+from .data.MenuCbData import MenuCbData
+from .data.RepositoryStorage import RepositoryStorage
+from .data.Scope import Scope
+from .data.UserStates import UserStates
+from .repository.AccessRepository import AccessRepository
+from .repository.FunctionRepository import FunctionRepository, handle_func_call, async_handle_func_call
+from .repository.MenuRepository import MenuRepository
+from .repository.ScopeRepository import ScopeRepository, substitute_vars
+from .repository.TranslationRepository import TranslationRepository
 
 
 rs: RepositoryStorage = None

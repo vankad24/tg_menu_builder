@@ -1,7 +1,7 @@
 import json
 import os
 
-from datasource.AbstractDataSource import AbstractDataSource
+from src.menu_builder.datasource.AbstractDataSource import AbstractDataSource
 
 
 class JsonDataSource(AbstractDataSource):
