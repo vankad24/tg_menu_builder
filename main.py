@@ -1,15 +1,16 @@
 import asyncio
 import logging
+
+from Config import Config
 from example_data_source import *
 
 from aiogram import Bot, Dispatcher, types, Router
 from aiogram.filters import Command
 from src.menu_builder import menu_builder as mb
-from bot_init import config
 
 logging.basicConfig(level=logging.INFO)
 
-
+config = Config()
 bot = Bot(token=config.BOT_TOKEN)
 dp = Dispatcher()
 router = Router()
@@ -26,21 +27,13 @@ async def cmd_test(message: types.Message):
 # ===== Запуск бота =====
 
 def init_menu_builder():
-    func_source = FuncSource()
-    translation_source = TranslationSource()
-    reserved_vars_source = ReservedVarsSource()
-    access_levels_source = AccessLevelsSource()
-    menu_structure_source = MenuStructureSource()
-
-
     mb.createRepositoryStorage(
-        function_src=func_source,
-        translation_src=translation_source,
-        reserved_vars_src=reserved_vars_source,
-        access_levels_src=access_levels_source,
-        menu_structure_src=menu_structure_source
+        function_src=FuncSource(),
+        translation_src=TranslationSource(),
+        reserved_vars_src=ReservedVarsSource(),
+        access_levels_src=AccessLevelsSource(config.ADMINS),
+        menu_structure_src=MenuStructureSource()
     )
-
 
 async def main():
     init_menu_builder()

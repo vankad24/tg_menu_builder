@@ -1,16 +1,8 @@
 from datetime import datetime
 
-from bot_init import config
 from src.menu_builder.datasource.AbstractDataSource import AbstractDataSource as ADS
 
 import handlers
-
-_access_levels = {
-    "admin": {
-        "ids": config.ADMINS,
-        "fail_message": "Вы не админ"
-    }
-}
 
 _menu_structure = {
     "main": {
@@ -53,18 +45,6 @@ _menu_structure = {
         ]
     }
 }
-_text_translations = {
-    "welcome": "Добро пожаловать, $USER_NAME! Это бот-конструктор"
-}
-_reserved_vars = {
-    'USER_ID': lambda msg: msg.chat.id,
-    'USER_NAME': lambda msg: 'Vanka',
-    'MENU_PREVIOUS_STAGE': lambda msg: 'todo',
-    'MENU_CURRENT_STAGE': lambda msg: 'todo',
-    'SYS_DATE': lambda msg: datetime.now().strftime("%d.%m.%Y"),
-    'SYS_TIME': lambda msg: datetime.now().strftime("%H:%M:%S"),
-    'SYS_BOT_NAME': lambda msg: 'Menu builder bot',
-}
 
 class FuncSource(ADS):
     def get(self, key: str, default=None):
@@ -72,18 +52,44 @@ class FuncSource(ADS):
 
 
 class TranslationSource(ADS):
+    def __init__(self):
+        self._text_translations = {
+            "welcome": "Добро пожаловать, $USER_NAME! Это бот-конструктор"
+        }
+
     def get(self, key: str, default=None):
-        return _text_translations.get(key,default)
+        return self._text_translations.get(key,default)
 
 
 class ReservedVarsSource(ADS):
+    def __init__(self):
+        self._reserved_vars = {
+            'USER_ID': lambda msg: msg.chat.id,
+            'USER_NAME': lambda msg: 'Vanka',
+            'MENU_PREVIOUS_STAGE': lambda msg: 'todo',
+            'MENU_CURRENT_STAGE': lambda msg: 'todo',
+            'SYS_DATE': lambda msg: datetime.now().strftime("%d.%m.%Y"),
+            'SYS_TIME': lambda msg: datetime.now().strftime("%H:%M:%S"),
+            'SYS_BOT_NAME': lambda msg: 'Menu builder bot',
+        }
+
+
     def get(self, key: str, default=None):
-        return _reserved_vars.get(key, default)
+        return self._reserved_vars.get(key, default)
 
 
 class AccessLevelsSource(ADS):
+    def __init__(self, admins):
+        self._access_levels = {
+            "admin": {
+                "ids": admins,
+                "fail_message": "Вы не админ"
+            }
+        }
+
     def get(self, key: str, default=None):
-        return _access_levels.get(key, default)
+        return self._access_levels.get(key, default)
+
 
 
 class MenuStructureSource(ADS):
