@@ -13,7 +13,7 @@ from .repository.FunctionRepository import FunctionRepository, handle_func_call,
 from .repository.MenuRepository import MenuRepository
 from .repository.ScopeRepository import ScopeRepository, substitute_vars
 from .repository.TranslationRepository import TranslationRepository
-
+from .utils.message_functions import send_message
 
 rs: RepositoryStorage = None
 
@@ -143,10 +143,7 @@ async def handle_send_menu(message: types.Message, menu_key: str, edit_message=F
 
     msg_text, keyboard = build_message(message, menu_item)
     if msg_text:
-        if edit_message:
-            await message.edit_text(msg_text, reply_markup=keyboard)
-        else:
-            await message.answer(msg_text, reply_markup=keyboard)
+        await send_message(message, msg_text, keyboard, edit_message)
 
 
 async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
