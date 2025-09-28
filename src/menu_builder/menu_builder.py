@@ -35,8 +35,11 @@ def createRepositoryStorage(
 
 
 # ===== Генерация клавиатуры =====
-def build_keyboard(message: Message, menu_item, scope) -> InlineKeyboardMarkup:
-    buttons_list = process_source(menu_item["buttons"], message, scope)
+def build_keyboard(message: Message, menu_item, scope) -> InlineKeyboardMarkup| None:
+    buttons = menu_item.get("buttons", None)
+    if not buttons:
+        return None
+    buttons_list = process_source(buttons, message, scope)
     buttons_list = [x if isinstance(x, list) else [x] for x in buttons_list]
     return InlineKeyboardMarkup(inline_keyboard=buttons_list)
 
