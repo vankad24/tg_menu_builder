@@ -7,18 +7,18 @@ async def send_message(message: Message, text: str, keyboard=None, edit_message=
     :param message: объект Message из aiogram
     :param text: текст сообщения
     :param keyboard: клавиатура (InlineKeyboardMarkup или ReplyKeyboardMarkup)
-    :param attachment: None или кортеж (media_type, media, need_to_open)
+    :param attachment: None или кортеж (media_type, media, should_open)
                        media_type = 'photo'|'video'
-                       media = путь к файлу или URL
-                       need_to_open = True, если нужно открыть локальный файл
+                       data = путь к файлу или URL
+                       should_open = True, если нужно открыть локальный файл
     :param edit_message: редактировать существующее сообщение
     """
     if attachment:
         media_type = attachment.get('type')
-        media = attachment.get('media')
-        need_to_open = attachment.get('need_to_open', False)
+        media = attachment.get('data')
+        should_open = attachment.get('should_open', False)
 
-        if need_to_open:
+        if should_open:
             with open(media, 'rb') as f:
                 await send_media(message, text, keyboard, media_type, f, edit_message)
         else:
