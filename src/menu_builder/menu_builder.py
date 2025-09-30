@@ -43,6 +43,23 @@ def build_keyboard(message: Message, menu_item, scope) -> InlineKeyboardMarkup| 
     buttons_list = [x if isinstance(x, list) else [x] for x in buttons_list]
     return InlineKeyboardMarkup(inline_keyboard=buttons_list)
 
+async def get_attachment(message: Message, menu_item, scope):
+    attachment_item = menu_item.get("attachment", None)
+    if not attachment_item:
+        return None
+    a_type = gfm(attachment_item, 'type', scope)
+    data = gfm(attachment_item, 'data', scope)
+
+    match a_type:
+        case 'func':
+            args = parse_args(attachment_item, scope)
+            func = rs.funRep.get_functon(data)
+            return await async_handle_func_call(message, func, args)
+        case 'photo' | 'video':
+            should_open = attachment_item['should_open']
+            return {'type': a_type, 'data': data, 'should_open': should_open}
+    return None
+
 def process_source(source, message: Message, scope):
     buttons_list = []
     for item in source:
@@ -56,6 +73,20 @@ def process_source(source, message: Message, scope):
                 else:
                     buttons_list.append(processed)
     return buttons_list
+
+def parse_args(item, scope):
+    args = None
+    if "args" in item:
+        arr = [
+            substitute_vars(x, scope) if isinstance(x, str) else x
+            for x in item["args"]
+        ]
+        args = json.dumps(arr)
+    return args
+
+# get from item
+def gfm(item, name, scope):
+    return substitute_vars(item[name], scope)
 
 def process_item(item, message: Message, parent_scope):
     scope = load_scope(item, parent_scope, message)
@@ -72,19 +103,12 @@ def process_item(item, message: Message, parent_scope):
                 callback_data=MenuCbData(action="goto", data=substitute_vars(item["data"], scope)).pack()
             )
         case "func":
-            args = None
-            if "args" in item:
-                arr = [
-                    substitute_vars(x, scope) if isinstance(x, str) else x
-                    for x in item["args"]
-                ]
-                args = json.dumps(arr)
             return InlineKeyboardButton(
                 text=rs.transRep.process_text(item, scope),
                 callback_data=MenuCbData(
                     action="func",
                     data=substitute_vars(item["data"], scope),
-                    args=args
+                    args=parse_args(item, scope)
                 ).pack()
             )
         case "gen":
@@ -134,8 +158,8 @@ def has_access(message: types.Message, item, scope: Scope):
             return False, None
     return True, None
 
-def build_message(message: types.Message, menu_item, stage_scope):
-    return rs.transRep.process_text(menu_item, stage_scope), build_keyboard(message, menu_item, stage_scope)
+async def build_message(message: types.Message, menu_item, stage_scope):
+    return rs.transRep.process_text(menu_item, stage_scope), build_keyboard(message, menu_item, stage_scope), await get_attachment(message, menu_item, stage_scope)
 
 async def handle_send_menu(message: types.Message, menu_key: str, edit_message=False):
     menu_item = rs.menuRep.get(menu_key)
@@ -148,9 +172,9 @@ async def handle_send_menu(message: types.Message, menu_key: str, edit_message=F
             await message.answer(fail_message)
         return
 
-    msg_text, keyboard = build_message(message, menu_item, stage_scope)
+    msg_text, keyboard, attachment = await build_message(message, menu_item, stage_scope)
     if msg_text:
-        await send_message(message, msg_text, keyboard, edit_message)
+        await send_message(message, msg_text, keyboard, edit_message, attachment)
 
 
 async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
