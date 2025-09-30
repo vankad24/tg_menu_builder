@@ -59,10 +59,10 @@ def process_source(source, message: Message, scope):
 
 def process_item(item, message: Message, parent_scope):
     scope = load_scope(item, parent_scope, message)
-    if "access" in item:
-        access_level = item["access"]
-        if not rs.accessRep.has_access(access_level, message):
-            return None
+
+    access, fail_message = has_access(message, item, scope)
+    if not access:
+        return None
 
     action = substitute_vars(item["action"], scope)
     match action:
@@ -124,24 +124,31 @@ def load_scope(item, parent_scope, message):
         return Scope(vars_dict, parent_scope)
     return parent_scope
 
+def has_access(message: types.Message, item, scope: Scope):
+    if "access" in item:
+        access_level = substitute_vars(item["access"], scope)
+        if not rs.accessRep.has_access(access_level, message):
+            fail_message = rs.accessRep.get_fail_message(access_level)
+            if fail_message:
+                return False, fail_message
+            return False, None
+    return True, None
 
-def build_message(message: types.Message, menu_item):
-    stage_scope = load_scope(menu_item, Scope({}, message=message, scopeRep=rs.scopeRep), message)
+def build_message(message: types.Message, menu_item, stage_scope):
     return rs.transRep.process_text(menu_item, stage_scope), build_keyboard(message, menu_item, stage_scope)
 
 async def handle_send_menu(message: types.Message, menu_key: str, edit_message=False):
     menu_item = rs.menuRep.get(menu_key)
+    stage_scope = load_scope(menu_item, Scope({}, message=message, scopeRep=rs.scopeRep), message)
 
     #check access level
-    if "access" in menu_item:
-        access_level = menu_item["access"]
-        if not rs.accessRep.has_access(access_level, message):
-            fail_message = rs.accessRep.get_fail_message(access_level)
-            if fail_message:
-                await message.answer(fail_message)
-            return
+    access, fail_message = has_access(message, menu_item, stage_scope)
+    if not access:
+        if fail_message:
+            await message.answer(fail_message)
+        return
 
-    msg_text, keyboard = build_message(message, menu_item)
+    msg_text, keyboard = build_message(message, menu_item, stage_scope)
     if msg_text:
         await send_message(message, msg_text, keyboard, edit_message)
 
