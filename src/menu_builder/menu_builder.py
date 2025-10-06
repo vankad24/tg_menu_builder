@@ -86,16 +86,17 @@ def parse_args(item, scope):
     return args
 
 # get from item
-def gfm(item, name, scope, default=None):
+def gfm(item, name, scope, default=''):
     return substitute_vars(item.get(name, default), scope)
 
 def get_bool(item, name, scope, default=None):
-    v = gfm(item, name, scope, default=default)
+    v = item.get(name, default)
     if isinstance(v, int):
         if v == 0:
             return False
         return True
     elif isinstance(v, str):
+        v = gfm(item, name, scope, default=default)
         if v.lower() == 'true':
             return True
         if v.lower() == 'false':
@@ -178,7 +179,8 @@ async def build_message(message: types.Message, menu_item, stage_scope):
         text=rs.transRep.process_text(menu_item, stage_scope),
         keyboard=build_keyboard(message, menu_item, stage_scope),
         attachment=await get_attachment(message, menu_item, stage_scope),
-        protect_content=False
+        protect_content=get_bool(menu_item, 'protect_content', stage_scope, False),
+        response_handler=rs.funRep.get_functon(gfm(menu_item, 'response_handler', stage_scope)),
     )
 
 
@@ -196,9 +198,10 @@ async def handle_send_menu(message: types.Message, menu_key: str, edit_message=F
 
     msg_model = await build_message(message, menu_item, stage_scope)
     if msg_model:
-        result = await send_message(message, text=msg_model.text, keyboard=msg_model.keyboard, attachment=msg_model.attachment, edit_message=edit_message, protect_content=msg_model.protect_content)
-        if msg_model.callback_handler:
-            msg_model.callback_handler(result)
+        result = await send_message(message, edit_message=edit_message, **msg_model.as_params())
+        if msg_model.response_handler:
+            # todo use async_handle_func_call ???
+            await msg_model.response_handler(result, message, msg_model)
 
 async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
     raw_data = callback.data

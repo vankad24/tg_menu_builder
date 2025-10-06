@@ -6,8 +6,8 @@ from src.menu_builder.datasource.AbstractDataSource import AbstractDataSource as
 from src.menu_builder.repository.BaseRepository import BaseRepository
 
 class FunctionRepository(BaseRepository):
-    def get_functon(self, key: str):
-        return self._data_source.get(key)
+    def get_functon(self, key: str, default=None):
+        return self._data_source.get(key, default)
 
 def get_func_args(message: types.Message, func, args: str | None = None):
 

@@ -1,4 +1,8 @@
 from aiogram import types
+import logging
+
+from src.menu_builder.data.MessageModel import MessageModel
+
 
 async def get_from_db(message: types.Message):
     # Здесь можно подключаться к БД
@@ -44,3 +48,10 @@ async def func_with_args(message: types.Message, *args):
 
 async def func_with_args2(message: types.Message, id, text, num):
     await message.answer(f"Переданные аргументы: {id=} {text=} {num=}")
+
+async def handle_response(response: types.Message, message: types.Message, message_model: MessageModel):
+    logging.info(f'handling response {message.chat.id=}!')
+    if response.photo:
+        logging.info(f'photo={response.photo[-1].file_id}')
+    if response.animation:
+        logging.info(f'video={response.animation.file_id}')

@@ -8,6 +8,8 @@ _menu_structure = {
     "main": {
         "text": "@welcome",
         "attachment": {"type": "video", "data": "https://media1.tenor.com/m/_0oaSG6tgPgAAAAC/welcome-anime.gif", "should_open": False, "has_spoiler": False},
+        "protect_content": "true",
+        "response_handler": "handle_response",
         "buttons": [
             [
                 {"text": "Пункт 1", "action": "goto", "data": "m1"},
