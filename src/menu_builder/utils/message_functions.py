@@ -1,44 +1,110 @@
-from aiogram.types import InputMediaPhoto, InputMediaVideo, Message
+from typing import Union
 
-async def send_message(message: Message, text: str, keyboard=None, edit_message=False, attachment: dict | None = None):
+from aiogram.types import (
+    InputMediaPhoto,
+    InputMediaVideo,
+    Message,
+    FSInputFile
+)
+
+def get_input_media(attachment: list[dict] | dict, text: str):
+
+    is_list = isinstance(attachment, list)
+    result = []
+
+    if not is_list:
+        attachment=[attachment]
+
+    for idx, item in enumerate(attachment):
+        media_type = item.get("type")
+        data = item.get("data")
+        should_open = item.get("should_open", False)
+        has_spoiler = item.get("has_spoiler", False)
+
+        # todo ??? caption = text if idx == 0 else None  # caption = text только у первого
+
+        if should_open:
+            data = FSInputFile(data)
+
+        if media_type == "photo":
+            result.append(InputMediaPhoto(media=data, caption=text, has_spoiler=has_spoiler))
+        elif media_type == "video":
+            result.append(InputMediaVideo(media=data, caption=text, has_spoiler=has_spoiler))
+    if not is_list:
+        result = result[0]
+    return result
+
+
+
+async def send_message(
+        message: Message,
+        text: str = "",
+        keyboard=None,
+        attachment: Union[dict, list[dict], None] = None,
+        edit_message: bool = False,
+        protect_content: bool = False,
+):
     """
     Универсальная отправка сообщений с текстом, фото и видео.
 
-    :param message: объект Message из aiogram
-    :param text: текст сообщения
-    :param keyboard: клавиатура (InlineKeyboardMarkup или ReplyKeyboardMarkup)
-    :param attachment: None или кортеж (media_type, media, should_open)
-                       media_type = 'photo'|'video'
-                       data = путь к файлу или URL
-                       should_open = True, если нужно открыть локальный файл
-    :param edit_message: редактировать существующее сообщение
+    attachment:
+        dict или list[dict], где dict имеет поля:
+        - type: 'photo'|'video'
+        - data: путь к файлу или URL
+        - should_open: bool (открыть файл локально)
+        - has_spoiler: bool (наложить спойлер на фото/видео)
     """
-    if attachment:
-        media_type = attachment.get('type')
-        media = attachment.get('data')
-        should_open = attachment.get('should_open', False)
+    if not attachment:
+        if edit_message and message.content_type != "text":
+            await message.delete()
+            edit_message = False
 
-        if should_open:
-            with open(media, 'rb') as f:
-                await send_media(message, text, keyboard, media_type, f, edit_message)
-        else:
-            await send_media(message, text, keyboard, media_type, media, edit_message)
-    else:
         if edit_message:
-            await message.edit_text(text, reply_markup=keyboard)
+            result = await message.edit_text(text, reply_markup=keyboard, protect_content=protect_content)
         else:
-            await message.answer(text, reply_markup=keyboard)
+            result = await message.answer(text, reply_markup=keyboard, protect_content=protect_content)
+        return result
+
+    if isinstance(attachment, dict):
+        return await send_media(message, attachment, text, keyboard, edit_message, protect_content)
+    elif isinstance(attachment, list):
+        if edit_message:
+            # Нельзя отредактировать альбом, только отправить заново
+            return None
+        else:
+            return await send_group(message, text, keyboard, attachment, protect_content)
 
 
-async def send_media(message, text, keyboard, media_type, media, edit_message):
-    """Функция для отправки фото или видео"""
+async def send_media(message, attachment, text, keyboard, edit_message=False, protect_content=False):
+    """Функция для отправки/редактирования одного фото или видео"""
+    media = get_input_media(attachment, text)
+
+    if edit_message and message.content_type == "text":
+        await message.delete()
+        edit_message = False
+
     if edit_message:
-        if media_type == 'photo':
-            await message.edit_media(InputMediaPhoto(media=media, caption=text), reply_markup=keyboard)
-        elif media_type == 'video':
-            await message.edit_media(InputMediaVideo(media=media, caption=text), reply_markup=keyboard)
+        return await message.edit_media(media, reply_markup=keyboard, protect_content=protect_content)
     else:
-        if media_type == 'photo':
-            await message.answer_photo(media, caption=text, reply_markup=keyboard)
-        elif media_type == 'video':
-            await message.answer_video(media, caption=text, reply_markup=keyboard)
+        func = None
+        match attachment['type']:
+            case 'photo':
+                func = message.answer_photo
+            case 'video':
+                func = message.answer_video
+
+        if not func:
+            return None
+        return await func(media.media, caption=text, reply_markup=keyboard, has_spoiler=media.has_spoiler, protect_content=protect_content)
+
+
+async def send_group(message: Message, text: str, keyboard, attachments, protect_content):
+    """Отправка нескольких фото/видео"""
+    media = get_input_media(attachments, text)
+
+    result = await message.answer_media_group(media=media, protect_content=protect_content)
+
+    if keyboard:
+        # клавиатуру придётся отправить отдельным сообщением
+        await message.answer("⬆️ Медиа выше", reply_markup=keyboard)
+    return result

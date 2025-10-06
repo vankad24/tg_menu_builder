@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 
 from .data.MenuCbData import MenuCbData
+from .data.MessageModel import MessageModel
 from .data.RepositoryStorage import RepositoryStorage
 from .data.Scope import Scope
 from .data.UserStates import UserStates
@@ -56,7 +57,7 @@ async def get_attachment(message: Message, menu_item, scope):
             func = rs.funRep.get_functon(data)
             return await async_handle_func_call(message, func, args)
         case 'photo' | 'video':
-            should_open = attachment_item['should_open']
+            should_open = get_bool(attachment_item, 'should_open', scope, default=False)
             return {'type': a_type, 'data': data, 'should_open': should_open}
     return None
 
@@ -85,8 +86,22 @@ def parse_args(item, scope):
     return args
 
 # get from item
-def gfm(item, name, scope):
-    return substitute_vars(item[name], scope)
+def gfm(item, name, scope, default=None):
+    return substitute_vars(item.get(name, default), scope)
+
+def get_bool(item, name, scope, default=None):
+    v = gfm(item, name, scope, default=default)
+    if isinstance(v, int):
+        if v == 0:
+            return False
+        return True
+    elif isinstance(v, str):
+        if v.lower() == 'true':
+            return True
+        if v.lower() == 'false':
+            return False
+        return default
+    return default
 
 def process_item(item, message: Message, parent_scope):
     scope = load_scope(item, parent_scope, message)
@@ -159,7 +174,13 @@ def has_access(message: types.Message, item, scope: Scope):
     return True, None
 
 async def build_message(message: types.Message, menu_item, stage_scope):
-    return rs.transRep.process_text(menu_item, stage_scope), build_keyboard(message, menu_item, stage_scope), await get_attachment(message, menu_item, stage_scope)
+    return MessageModel(
+        text=rs.transRep.process_text(menu_item, stage_scope),
+        keyboard=build_keyboard(message, menu_item, stage_scope),
+        attachment=await get_attachment(message, menu_item, stage_scope),
+        protect_content=False
+    )
+
 
 async def handle_send_menu(message: types.Message, menu_key: str, edit_message=False):
     menu_item = rs.menuRep.get(menu_key)
@@ -172,10 +193,12 @@ async def handle_send_menu(message: types.Message, menu_key: str, edit_message=F
             await message.answer(fail_message)
         return
 
-    msg_text, keyboard, attachment = await build_message(message, menu_item, stage_scope)
-    if msg_text:
-        await send_message(message, msg_text, keyboard, edit_message, attachment)
 
+    msg_model = await build_message(message, menu_item, stage_scope)
+    if msg_model:
+        result = await send_message(message, text=msg_model.text, keyboard=msg_model.keyboard, attachment=msg_model.attachment, edit_message=edit_message, protect_content=msg_model.protect_content)
+        if msg_model.callback_handler:
+            msg_model.callback_handler(result)
 
 async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
     raw_data = callback.data

@@ -7,7 +7,7 @@ import handlers
 _menu_structure = {
     "main": {
         "text": "@welcome",
-        "attachment": {"type": "video", "data": "https://media1.tenor.com/m/_0oaSG6tgPgAAAAC/welcome-anime.gif", "should_open": False},
+        "attachment": {"type": "video", "data": "https://media1.tenor.com/m/_0oaSG6tgPgAAAAC/welcome-anime.gif", "should_open": False, "has_spoiler": False},
         "buttons": [
             [
                 {"text": "Пункт 1", "action": "goto", "data": "m1"},
