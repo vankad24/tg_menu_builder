@@ -55,25 +55,28 @@ async def send_message(
         - has_spoiler: bool (наложить спойлер на фото/видео)
     """
     if not attachment:
-        if edit_message and message.content_type != "text":
-            await message.delete()
-            edit_message = False
-
-        if edit_message:
-            result = await message.edit_text(text, reply_markup=keyboard, protect_content=protect_content)
-        else:
-            result = await message.answer(text, reply_markup=keyboard, protect_content=protect_content)
-        return result
-
-    if isinstance(attachment, dict):
+        return await send_text(message, text, keyboard, edit_message, protect_content)
+    elif isinstance(attachment, dict):
         return await send_media(message, attachment, text, keyboard, edit_message, protect_content)
     elif isinstance(attachment, list):
-        if edit_message:
-            # Нельзя отредактировать альбом, только отправить заново
-            return None
-        else:
-            return await send_group(message, text, keyboard, attachment, protect_content)
+        return await send_media_group(message, attachment, text, keyboard, edit_message, protect_content)
 
+async def send_text(
+        message: Message,
+        text: str = "",
+        keyboard=None,
+        edit_message: bool = False,
+        protect_content: bool = False,
+):
+    if edit_message and message.content_type != "text":
+        await message.delete()
+        edit_message = False
+
+    if edit_message:
+        result = await message.edit_text(text, reply_markup=keyboard, protect_content=protect_content)
+    else:
+        result = await message.answer(text, reply_markup=keyboard, protect_content=protect_content)
+    return result
 
 async def send_media(message, attachment, text, keyboard, edit_message=False, protect_content=False):
     """Функция для отправки/редактирования одного фото или видео"""
@@ -97,10 +100,12 @@ async def send_media(message, attachment, text, keyboard, edit_message=False, pr
             return None
         return await func(media.media, caption=text, reply_markup=keyboard, has_spoiler=media.has_spoiler, protect_content=protect_content)
 
-
-async def send_group(message: Message, text: str, keyboard, attachments, protect_content):
+async def send_media_group(message: Message, attachments: list, text: str, keyboard, edit_message=False, protect_content=False):
     """Отправка нескольких фото/видео"""
     media = get_input_media(attachments, text)
+
+    if edit_message:
+        await message.delete()
 
     result = await message.answer_media_group(media=media, protect_content=protect_content)
 
