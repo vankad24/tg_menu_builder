@@ -133,7 +133,7 @@ def process_item(item, message: Message, parent_scope):
         case "goto":
             return InlineKeyboardButton(
                 text=rs.transRep.process_text(item, scope),
-                callback_data=MenuCbData(action="goto", data=substitute_vars(item["data"], scope)).pack()
+                callback_data=MenuCbData(action="goto", data=substitute_vars(item["data"], scope), funname=substitute_vars(item.get("funname", ""), scope)).pack()
             )
         case "func":
             return InlineKeyboardButton(
@@ -231,11 +231,15 @@ async def handle_callback(callback: types.CallbackQuery, state: FSMContext):
 
     action = callback_data.action
     data = callback_data.data
+    funname = callback_data.funname
     args = callback_data.args
     callback_name = callback_data.callback
 
     match action:
         case "goto":
+            if funname:
+                func = rs.funRep.get_functon(funname)
+                await async_handle_func_call(callback.message, func, args)
             await handle_send_menu(callback.message, data, True)
         case "func":
             func = rs.funRep.get_functon(data)

@@ -5,4 +5,5 @@ class MenuCbData(CallbackData, prefix="menu"):
     action: str
     data: str | None = None
     args: str | None = None
+    funname: str | None = None
     callback: str | None = None
