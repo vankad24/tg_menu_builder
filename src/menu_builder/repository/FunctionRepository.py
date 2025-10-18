@@ -2,8 +2,7 @@ import inspect
 import json
 
 from aiogram import types
-from src.menu_builder.datasource.AbstractDataSource import AbstractDataSource as ADS
-from src.menu_builder.repository.BaseRepository import BaseRepository
+from .BaseRepository import BaseRepository
 
 class FunctionRepository(BaseRepository):
     def get_functon(self, key: str, default=None):

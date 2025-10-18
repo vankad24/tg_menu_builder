@@ -1,7 +1,7 @@
 from string import Template
 
-from src.menu_builder.data.Scope import Scope
-from src.menu_builder.repository.BaseRepository import BaseRepository
+from ..data.Scope import Scope
+from .BaseRepository import BaseRepository
 
 
 class ScopeRepository(BaseRepository):

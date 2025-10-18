@@ -1,8 +1,8 @@
-from src.menu_builder.repository.AccessRepository import AccessRepository
-from src.menu_builder.repository.FunctionRepository import FunctionRepository
-from src.menu_builder.repository.MenuRepository import MenuRepository
-from src.menu_builder.repository.ScopeRepository import ScopeRepository
-from src.menu_builder.repository.TranslationRepository import TranslationRepository
+from ..repository.AccessRepository import AccessRepository
+from ..repository.FunctionRepository import FunctionRepository
+from ..repository.MenuRepository import MenuRepository
+from ..repository.ScopeRepository import ScopeRepository
+from ..repository.TranslationRepository import TranslationRepository
 
 
 class RepositoryStorage:
