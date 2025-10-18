@@ -10,8 +10,7 @@ from src.menu_builder import menu_builder as mb
 
 logging.basicConfig(level=logging.INFO)
 
-config = Config()
-bot = Bot(token=config.BOT_TOKEN)
+bot = Bot(token=Config.BOT_TOKEN)
 dp = Dispatcher()
 router = Router()
 
@@ -31,7 +30,7 @@ def init_menu_builder():
         function_src=FuncSource(),
         translation_src=TranslationSource(),
         reserved_vars_src=ReservedVarsSource(),
-        access_levels_src=AccessLevelsSource(config.ADMINS),
+        access_levels_src=AccessLevelsSource(Config.BOT_ADMINS),
         menu_structure_src=MenuStructureSource()
     )
 

@@ -41,7 +41,8 @@ def build_keyboard(message: Message, menu_item, scope) -> InlineKeyboardMarkup| 
     if not buttons:
         return None
     buttons_list = process_source(buttons, message, scope)
-    buttons_list = [x if isinstance(x, list) else [x] for x in buttons_list]
+    buttons_list = normalize_button_list(buttons_list)
+
     return InlineKeyboardMarkup(inline_keyboard=buttons_list)
 
 async def get_attachment(message: Message, menu_item, scope):
@@ -60,6 +61,21 @@ async def get_attachment(message: Message, menu_item, scope):
             should_open = get_bool(attachment_item, 'should_open', scope, default=False)
             return {'type': a_type, 'data': data, 'should_open': should_open}
     return None
+
+def normalize_button_list(button_list):
+    result = []
+    for item in button_list:
+        if isinstance(item, list):
+            if len(item)==1:
+                if isinstance(item[0], list):
+                    result.append(item[0])
+                else:
+                    result.append(item)
+            if len(item)>1:
+                result.append(item)
+        else:
+            result.append([item])
+    return result
 
 def process_source(source, message: Message, scope):
     buttons_list = []
@@ -108,7 +124,8 @@ def process_item(item, message: Message, parent_scope):
     scope = load_scope(item, parent_scope, message)
 
     access, fail_message = has_access(message, item, scope)
-    if not access:
+    visible = get_bool(item, 'visible', scope, True)
+    if not access or not visible:
         return None
 
     action = substitute_vars(item["action"], scope)
