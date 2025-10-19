@@ -30,6 +30,8 @@ def get_vars():
         {"text": "Элемент 2", "funname": "hello2"},
     ]
 
+async def simple_getter(message: types.Message):
+    return {"var1": message.chat.full_name, "var2": "hello2"}
 
 async def hello1(message: types.Message):
     await message.answer("hi1")

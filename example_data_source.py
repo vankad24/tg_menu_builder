@@ -34,7 +34,9 @@ _menu_structure = {
     },
     "m2": {
         "text": "Меню 2",
+        "getter": "simple_getter",
         "buttons": [
+            {"text": "Пусто $var1 $var2", "action": "nothing"},
             {"action": "gen_manual", "data": "get_my_items"},
             {"text": "Назад", "action": "goto", "data": "main"}
         ]
