@@ -36,11 +36,11 @@ def createRepositoryStorage(
 
 
 # ===== Генерация клавиатуры =====
-def build_keyboard(message: Message, menu_item, scope) -> InlineKeyboardMarkup| None:
+async def build_keyboard(message: Message, menu_item, scope) -> InlineKeyboardMarkup| None:
     buttons = menu_item.get("buttons", None)
     if not buttons:
         return None
-    buttons_list = process_source(buttons, message, scope)
+    buttons_list = await process_source(buttons, message, scope)
     buttons_list = normalize_button_list(buttons_list)
 
     return InlineKeyboardMarkup(inline_keyboard=buttons_list)
@@ -77,13 +77,13 @@ def normalize_button_list(button_list):
             result.append([item])
     return result
 
-def process_source(source, message: Message, scope):
+async def process_source(source, message: Message, scope):
     buttons_list = []
     for item in source:
         if isinstance(item, list):
-            buttons_list.append(process_source(item, message, scope))
+            buttons_list.append(await process_source(item, message, scope))
         else:
-            processed = process_item(item, message, scope)
+            processed = await process_item(item, message, scope)
             if processed is not None:
                 if isinstance(processed, list):
                     buttons_list.extend(processed)
@@ -120,8 +120,8 @@ def get_bool(item, name, scope, default=None):
         return default
     return default
 
-def process_item(item, message: Message, parent_scope):
-    scope = load_scope(item, parent_scope, message)
+async def process_item(item, message: Message, parent_scope):
+    scope = await load_scope(item, parent_scope, message)
 
     access, fail_message = has_access(message, item, scope)
     visible = get_bool(item, 'visible', scope, True)
@@ -151,13 +151,13 @@ def process_item(item, message: Message, parent_scope):
 
             buttons = []
             for var_dict in var_dicts:
-                buttons.extend(process_source([pattern_item], message, Scope(var_dict, scope)))
+                buttons.extend(await process_source([pattern_item], message, Scope(var_dict, scope)))
             return buttons
 
         case "gen_manual":
             func = rs.funRep.get_functon(substitute_vars(item["data"], scope))
             items = handle_func_call(message, func)
-            return process_source(items, message, scope)
+            return await process_source(items, message, scope)
         case "input":
             return InlineKeyboardButton(
                 text=rs.transRep.process_text(item, scope),
@@ -174,10 +174,10 @@ def process_item(item, message: Message, parent_scope):
             raise Exception(f"Нет такого действия: {item['action']}")
 
 
-def load_scope(item, parent_scope, message):
+async def load_scope(item, parent_scope, message):
     if 'getter' in item:
         func = rs.funRep.get_functon(substitute_vars(item["getter"], parent_scope))
-        vars_dict = handle_func_call(message, func)
+        vars_dict = await async_handle_func_call(message, func)
         return Scope(vars_dict, parent_scope)
     return parent_scope
 
@@ -194,7 +194,7 @@ def has_access(message: types.Message, item, scope: Scope):
 async def build_message(message: types.Message, menu_item, stage_scope):
     return MessageModel(
         text=rs.transRep.process_text(menu_item, stage_scope),
-        keyboard=build_keyboard(message, menu_item, stage_scope),
+        keyboard=await build_keyboard(message, menu_item, stage_scope),
         attachment=await get_attachment(message, menu_item, stage_scope),
         protect_content=get_bool(menu_item, 'protect_content', stage_scope, False),
         response_handler=rs.funRep.get_functon(gfm(menu_item, 'response_handler', stage_scope)),
@@ -203,7 +203,7 @@ async def build_message(message: types.Message, menu_item, stage_scope):
 
 async def handle_send_menu(message: types.Message, menu_key: str, edit_message=False):
     menu_item = rs.menuRep.get(menu_key)
-    stage_scope = load_scope(menu_item, Scope({}, message=message, scopeRep=rs.scopeRep), message)
+    stage_scope = await load_scope(menu_item, Scope({}, message=message, scopeRep=rs.scopeRep), message)
 
     #check access level
     access, fail_message = has_access(message, menu_item, stage_scope)
